@@ -8,7 +8,7 @@ import (
 type Request struct {
 	Action   `json:"action"`
 	TaskID   string `json:"task_id"`
-	UserName string `json:"username"`
+	Username string `json:"username"`
 }
 
 type Action int
@@ -91,7 +91,7 @@ func (user *User) Begin() {
 }
 
 var exampleSession User = User{
-	ID: "user",
+	Username: "user",
 	Session: Session{
 		Start:    time.Now(),
 		Duration: time.Second * 2,

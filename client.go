@@ -38,18 +38,18 @@ func (client *Client) write(msg []byte) error {
 	return err
 }
 
-func (client *Client) SessionStart(user User, taskID string) error {
+func (client *Client) SessionStart(user, taskID string) error {
 	return client.sendRequest(ActionStart, user, taskID)
 }
 
-func (client *Client) SessionStop(user User, taskID string) error {
+func (client *Client) SessionStop(user, taskID string) error {
 	return client.sendRequest(ActionStop, user, taskID)
 }
 
 func (client *Client) sendRequest(action Action, username, taskID string) error {
 	request := Request{
 		Username: username,
-		TaskID: TaskID,
+		TaskID: taskID,
 		Action: ActionStart,
 	}
 	data, err := json.Marshal(request)
