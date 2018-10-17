@@ -7,7 +7,7 @@ import (
 	"os"
 	"os/user"
 
-	"github.com/tskinn/pomodorogo"
+	"github.com/tskinn/pomogo"
 )
 
 func main() {
@@ -15,7 +15,7 @@ func main() {
 
 	// get old task
 	oldRaw, _, _ := reader.ReadLine()
-	oldTask := pomodorogo.Task{}
+	oldTask := pomogo.Task{}
 	err := json.Unmarshal(oldRaw, &oldTask)
 	if err != nil {
 		fmt.Println(err)
@@ -24,7 +24,7 @@ func main() {
 
   // get new task
 	newRaw, _, _ := reader.ReadLine()
-	newTask := pomodorogo.Task{}
+	newTask := pomogo.Task{}
 	err = json.Unmarshal(newRaw, &newTask)
 	if err != nil {
   	fmt.Println(err)
@@ -40,13 +40,13 @@ func main() {
 		//log it
 	}
 
-	user := pomodorogo.User{
+	user := pomogo.User{
 		ID:      username,
-		Session: pomodorogo.Session{},
+		Session: pomogo.Session{},
 		Task:    newTask,
 	}
 
-	client := pomodorogo.Client{}
+	client := pomogo.Client{}
 	err = client.Connect()
 	if err != nil {
     // do soemthing

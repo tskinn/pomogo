@@ -1,4 +1,4 @@
-package pomodorogo
+package pomogo
 
 import (
 	"fmt"

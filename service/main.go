@@ -1,11 +1,11 @@
 package main
 
 import (
-  "github.com/tskinn/pomodorogo"
+  "github.com/tskinn/pomogo"
 )
 
 
 func main() {
-  server := pomodorogo.Server{}
+  server := pomogo.Server{}
   server.Start()
 }

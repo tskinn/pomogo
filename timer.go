@@ -1,3 +1,3 @@
-package pomodorogo
+package pomogo
 
 import ()
