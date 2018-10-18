@@ -49,12 +49,12 @@ func (client *Client) SessionStop(user, taskID string) error {
 func (client *Client) sendRequest(action Action, username, taskID string) error {
 	request := Request{
 		Username: username,
-		TaskID: taskID,
-		Action: ActionStart,
+		TaskID:   taskID,
+		Action:   ActionStart,
 	}
 	data, err := json.Marshal(request)
 	if err != nil {
-  	log.Println(err)
+		log.Println(err)
 		return err
 	}
 

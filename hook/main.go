@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"log"
 	"fmt"
 	"os"
 	"os/user"
@@ -18,20 +19,22 @@ func main() {
 	oldTask := pomogo.Task{}
 	err := json.Unmarshal(oldRaw, &oldTask)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		return
 	}
 
-  // get new task
+	// get new task
 	newRaw, _, _ := reader.ReadLine()
 	newTask := pomogo.Task{}
 	err = json.Unmarshal(newRaw, &newTask)
 	if err != nil {
-  	fmt.Println(err)
-  	return
+		log.Println(err)
+		return
 	}
 
-  // create user
+	fmt.Println(string(newRaw))
+
+	// create user
 	username := "unknown"
 	osUser, err := user.Current()
 	if err == nil {
@@ -40,25 +43,19 @@ func main() {
 		//log it
 	}
 
-	user := pomogo.User{
-		ID:      username,
-		Session: pomogo.Session{},
-		Task:    newTask,
-	}
-
 	client := pomogo.Client{}
 	err = client.Connect()
 	if err != nil {
-    // do soemthing
-    return
-  }
+		// do soemthing
+		return
+	}
 
-  err = client.SessionStart(user)
-  if err != nil {
-    return
-  }
+	err = client.SessionStart(username, newTask.UUID)
+	if err != nil {
+		return
+	}
 	// user has session and newTask
 	// send start session rpc?
 
-	fmt.Printf("%v\n", newTask)
+	log.Printf("%v\n", newTask)
 }

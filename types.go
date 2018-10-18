@@ -18,10 +18,15 @@ const (
 	ActionStop
 )
 
+type Config struct {
+	Option string
+}
+
 type User struct {
-	Username string `json:"username"`
-	Session  `json:"-"`
-	Task     `json:"task"`
+	Username string  `json:"username"`
+	Session  Session `json:"-"`
+	Task     Task    `json:"task"`
+	Config   Config  `json:"config"`
 }
 
 type Task struct {
@@ -42,15 +47,43 @@ const (
 	SessionCompleted
 )
 
+type SessionType uint8
+
+const (
+	SessionTypeWork SessionType = iota
+	SessionTypeRest
+)
+
 type Session struct {
 	Start          time.Time
 	End            time.Time
+	Timer          *time.Timer
 	Status         SessionStatus
+	Type           SessionType
 	Duration       time.Duration
 	StartHooks     []Hook
 	InterruptHooks []Hook
 	CompleteHooks  []Hook
 	Interrupt      chan bool `json:"-"`
+}
+
+func (session *Session) StartSession(task Task, length int) {
+	// time.AfterFunc(time.Minute * 5)
+	select {
+	case <-time.After(time.Minute * time.Duration(1)):
+		session.RunCompleteHooks(task)
+		// run hooks?
+	case <-session.Interrupt:
+		fmt.Println("")
+	}
+}
+
+func (session *Session) startSession(task Task, length int) {
+	session.Start = time.Now()
+	session.Timer = time.AfterFunc(time.Minute*time.Duration(length), func() {
+
+	})
+	session.End = time.Now().Add(time.Minute * time.Duration(length))
 }
 
 func (session *Session) RunStartHooks(task Task) {

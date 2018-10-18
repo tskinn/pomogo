@@ -17,7 +17,7 @@ type Server struct {
 
 func handleConnection(conn net.Conn) {
   log.Println("handling connection")
-	buff := make([]byte, 1024*5)
+	buff := make([]byte, 1024 * 10)
 	n, err := conn.Read(buff)
 	if err != nil {
   	log.Println("error reading from connection")
