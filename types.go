@@ -1,32 +1,36 @@
 package pomogo
 
 import (
-	"fmt"
 	"time"
 )
 
 type Request struct {
-	Action   `json:"action"`
-	TaskID   string `json:"task_id"`
-	Username string `json:"username"`
+	RequestType `json:"type"`
+	TaskID      string `json:"task_id"`
+	Username    string `json:"username"`
 }
 
-type Action int
+type RequestType int
 
 const (
-	ActionStart Action = iota
-	ActionStop
+	RequestTypeStart RequestType = iota
+	RequestTypeStop
 )
 
 type Config struct {
-	Option string
+	Option            string
+	DurationRestLong  time.Duration
+	DurationRestShort time.Duration
+	DurationWork      time.Duration
 }
 
 type User struct {
-	Username string  `json:"username"`
-	Session  Session `json:"-"`
-	Task     Task    `json:"task"`
-	Config   Config  `json:"config"`
+	Username        string  `json:"username"`
+	Session         Session `json:"-"`
+	PreviousSession Session `json:"-"`
+	Task            Task    `json:"task"`
+	Config          Config  `json:"config"`
+	RunningSessions uint    `json:"running_sesions"` // consecutive work sessions
 }
 
 type Task struct {
@@ -36,8 +40,6 @@ type Task struct {
 	Status      string `json:"status"`
 	UUID        string `json:"uuid"`
 }
-
-type Hook func(t Task) bool
 
 type SessionStatus int
 
@@ -55,115 +57,66 @@ const (
 )
 
 type Session struct {
-	Start          time.Time
-	End            time.Time
-	Timer          *time.Timer
-	Status         SessionStatus
-	Type           SessionType
-	Duration       time.Duration
-	StartHooks     []Hook
-	InterruptHooks []Hook
-	CompleteHooks  []Hook
-	Interrupt      chan bool `json:"-"`
+	Start            time.Time
+	End              time.Time
+	Timer            *time.Timer
+	Status           SessionStatus
+	Type             SessionType
+	Duration         time.Duration
+	StartActions     []Action
+	InterruptActions []Action
+	CompleteActions  []Action
+	Interrupt        chan bool `json:"-"`
 }
 
-func (session *Session) StartSession(task Task, length int) {
-	// time.AfterFunc(time.Minute * 5)
-	select {
-	case <-time.After(time.Minute * time.Duration(1)):
-		session.RunCompleteHooks(task)
-		// run hooks?
-	case <-session.Interrupt:
-		fmt.Println("")
-	}
-}
-
-func (session *Session) startSession(task Task, length int) {
-	session.Start = time.Now()
-	session.Timer = time.AfterFunc(time.Minute*time.Duration(length), func() {
-
+func (user *User) startSession(task Task, length int, sessionType SessionType) {
+	user.Session.Status = SessionStarted
+	user.Session.Type = sessionType
+	user.Session.Start = time.Now()
+	user.Session.Timer = time.AfterFunc(time.Minute*time.Duration(length), func() {
+		user.RunCompleteActions()
 	})
-	session.End = time.Now().Add(time.Minute * time.Duration(length))
+	user.Session.End = time.Now().Add(time.Minute * time.Duration(length))
 }
 
-func (session *Session) RunStartHooks(task Task) {
-	runHooks(task, session.StartHooks)
+func (user *User) stopSession() {
+	user.Session.Status = SessionInterrupted
+	user.Session.Timer.Stop() // TODO do  we need to check result?
+	user.PreviousSession = user.Session
+	user.RunInterruptActions()
 }
 
-func (session *Session) RunCompleteHooks(task Task) {
-	runHooks(task, session.CompleteHooks)
+func (user *User) RunStartActions() {
+	runActions(user, user.Session.StartActions)
 }
 
-func (session *Session) RunInterruptHooks(task Task) {
-	runHooks(task, session.InterruptHooks)
+func (user *User) RunCompleteActions() {
+	runActions(user, user.Session.CompleteActions)
 }
 
-func runHooks(task Task, hooks []Hook) {
+func (user *User) RunInterruptActions() {
+	runActions(user, user.Session.InterruptActions)
+}
+
+func runActions(user *User, hooks []Action) {
 	for _, hook := range hooks {
-		if ok := hook(task); !ok {
+		if ok := hook(user); !ok {
 			return
 		}
 	}
 }
 
-func (user *User) Begin() {
-	user.Session.RunStartHooks(user.Task)
-	user.Session.Status = SessionStarted
-	user.Session.Start = time.Now()
-	timer := time.NewTimer(user.Session.Duration)
-
-	select {
-	case doneTime := <-timer.C:
-		user.Session.Status = SessionCompleted
-		user.Session.End = doneTime
-		user.Session.RunCompleteHooks(user.Task)
-	case <-user.Session.Interrupt:
-		user.Session.Status = SessionInterrupted
-		user.Session.RunInterruptHooks(user.Task)
-	}
-}
-
-var exampleSession User = User{
-	Username: "user",
-	Session: Session{
-		Start:    time.Now(),
-		Duration: time.Second * 2,
-		StartHooks: []Hook{
-			func(t Task) bool {
-				fmt.Println("start session")
-				fmt.Println("starting task...")
-				fmt.Println("notifying user...")
-				return true
-			},
-		},
-		InterruptHooks: []Hook{
-			func(t Task) bool {
-				fmt.Println("interrupt session")
-				fmt.Println("stopping session...")
-				return true
-			},
-		},
-		CompleteHooks: []Hook{
-			func(t Task) bool {
-				fmt.Println("complete session")
-				fmt.Println("stopping task...")
-				fmt.Println("notifying user...")
-				return true
-			},
-		},
-	},
-}
-
-func Started(oldTask, newTask *Task) bool {
+func TaskStarted(oldTask, newTask *Task) bool {
 	if newTask.Start != "" && oldTask.Start == "" {
 		return true
 	}
 	return false
 }
 
-func Stopped(oldTask, newTask *Task) bool {
+func TaskStopped(oldTask, newTask *Task) bool {
 	if newTask.Start == "" && oldTask.Start != "" {
 		return true
 	}
 	return false
 }
+
