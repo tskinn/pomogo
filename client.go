@@ -7,10 +7,12 @@ import (
 	"time"
 )
 
+// Client ...
 type Client struct {
 	conn net.Conn
 }
 
+// Connect ...
 func (client *Client) Connect() error {
 	c, err := net.Dial("unix", defaultSock)
 	if err != nil {
@@ -38,12 +40,35 @@ func (client *Client) write(msg []byte) error {
 	return err
 }
 
+// SessionStart ...
 func (client *Client) SessionStart(user, taskID string) error {
 	return client.sendRequest(RequestTypeStart, user, taskID)
 }
 
+// SessionStop ...
 func (client *Client) SessionStop(user, taskID string) error {
 	return client.sendRequest(RequestTypeStop, user, taskID)
+}
+
+// SessionStatus ...
+func (client *Client) SessionStatus(user string) (Response, error) {
+	response := Response{}
+
+	err := client.sendRequest(RequestTypeStatus, user, "")
+	if err != nil {
+		log.Println("SessionStatus() error sending request")
+		return response, err
+	}
+
+	client.conn.SetReadDeadline(time.Now().Add(time.Second))
+	raw, err := client.read()
+	if err != nil {
+		log.Println("SessionStatus() error reading client")
+		return response, err
+	}
+
+	err = json.Unmarshal(raw, &response)
+	return response, err
 }
 
 func (client *Client) sendRequest(requestType RequestType, username, taskID string) error {
